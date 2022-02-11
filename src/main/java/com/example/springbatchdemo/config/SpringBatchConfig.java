@@ -1,6 +1,7 @@
 package com.example.springbatchdemo.config;
 
 import com.example.springbatchdemo.bean.BankTransaction;
+import com.example.springbatchdemo.dao.BankTransactionDao;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -20,33 +21,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 
+import java.text.SimpleDateFormat;
+import java.util.List;
+
 
 @Configuration
 @EnableBatchProcessing
 public class SpringBatchConfig {
-    @Autowired
-    private JobBuilderFactory jobBuilderFactory;
-    @Autowired
-    private StepBuilderFactory stepBuilderFactory;
-    @Autowired
-    private ItemReader<BankTransaction> bankTransactionItemReader;
-    @Autowired
-    private ItemWriter<BankTransaction> bankTransactionItemWriter;
-    @Autowired
-    private ItemProcessor<BankTransaction, BankTransaction> bankTransactionItemProcessor;
 
-    public Job bankJob() {
-        Step step1 = stepBuilderFactory.get("step-load-data")
-                .<BankTransaction, BankTransaction>chunk(100)
-                .reader(bankTransactionItemReader)
-                .processor(bankTransactionItemProcessor)
-                .writer(bankTransactionItemWriter)
-                .build();
-
-        return jobBuilderFactory.get("bank-data-loader-job")
-                .start(step1).build();
-
-    }
 
     @Bean
     public FlatFileItemReader<BankTransaction> flatFileItemReader(@Value("${inputFile}") Resource inputFile) {
@@ -65,13 +47,36 @@ public class SpringBatchConfig {
         lineTokenizer.setDelimiter(",");
         lineTokenizer.setStrict(false);
         lineTokenizer.setNames("id", "accountID", "strTransactionDate", "transactionType", "amount");
+        lineMapper.setLineTokenizer(lineTokenizer);
         BeanWrapperFieldSetMapper<BankTransaction> fieldSetMapper = new BeanWrapperFieldSetMapper<>();
         fieldSetMapper.setTargetType(BankTransaction.class);
         lineMapper.setFieldSetMapper(fieldSetMapper);
         return lineMapper;
     }
 
+    @Bean
+    public ItemProcessor<BankTransaction, BankTransaction> getItemProcessor(){
+        return new ItemProcessor<BankTransaction, BankTransaction>() {
+            private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy-HH:mm");
+            @Override
+            public BankTransaction process(BankTransaction bankTransaction) throws Exception {
+                bankTransaction.setTransactionDate(dateFormat.parse(bankTransaction.getStrTransactionDate()));
+                return bankTransaction;
+            }
+        };
+    }
 
+    @Bean
+    public ItemWriter<BankTransaction> getItemWriter() {
+        return new ItemWriter<BankTransaction>() {
+            @Autowired
+            private BankTransactionDao bankTransactionDao;
+            @Override
+            public void write(List<? extends BankTransaction> items) throws Exception {
+                bankTransactionDao.saveAll(items);
+            }
+        };
+    }
 
 
 }
