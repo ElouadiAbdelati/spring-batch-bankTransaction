@@ -1,0 +1,4 @@
+transaction_id,account_number,transaction_date,transaction_type,transaction_amount
+1,1111,17/09/2020-09:44,D,144.555
+2,1112,17/10/2020-09:44,C,1400.000
+3,1113,17/11/2020-09:44,D,14444.555
