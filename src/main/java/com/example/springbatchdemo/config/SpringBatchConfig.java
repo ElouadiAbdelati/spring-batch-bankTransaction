@@ -54,29 +54,6 @@ public class SpringBatchConfig {
         return lineMapper;
     }
 
-    @Bean
-    public ItemProcessor<BankTransaction, BankTransaction> getItemProcessor(){
-        return new ItemProcessor<BankTransaction, BankTransaction>() {
-            private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy-HH:mm");
-            @Override
-            public BankTransaction process(BankTransaction bankTransaction) throws Exception {
-                bankTransaction.setTransactionDate(dateFormat.parse(bankTransaction.getStrTransactionDate()));
-                return bankTransaction;
-            }
-        };
-    }
-
-    @Bean
-    public ItemWriter<BankTransaction> getItemWriter() {
-        return new ItemWriter<BankTransaction>() {
-            @Autowired
-            private BankTransactionDao bankTransactionDao;
-            @Override
-            public void write(List<? extends BankTransaction> items) throws Exception {
-                bankTransactionDao.saveAll(items);
-            }
-        };
-    }
 
 
 }
